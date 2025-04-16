@@ -7,51 +7,67 @@ const puzzleOne = (filename: string) => {
     .split("\n")
     .map((row) => row.split(" ").flatMap(Number));
 
-  const getReportSummary = (
-    report: number[],
-  ): { isValid: boolean; comparisonType: string }[] =>
-    report.reduce((result, value, index, arr) => {
-      if (index + 1 === arr.length) {
-        return result;
+  const isValidReport = (report: number[]) => {
+    const greater = report.every((value, index, arr) => {
+      if (index + 1 < arr.length) {
+        return arr[index + 1] > value && arr[index + 1] - value < 4;
       }
-
-      if (value > arr[index + 1]) {
-        return [
-          ...result,
-          { isValid: value - arr[index + 1] < 4, comparisonType: "<" },
-        ];
+      return true;
+    });
+    const less = report.every((value, index, arr) => {
+      if (index + 1 < arr.length) {
+        return arr[index + 1] < value && value - arr[index + 1] < 4;
       }
-
-      if (value < arr[index + 1]) {
-        return [
-          ...result,
-          { isValid: arr[index + 1] - value < 4, comparisonType: ">" },
-        ];
-      }
-
-      if (value === arr[index + 1]) {
-        return [...result, { isValid: false, comparisonType: "=" }];
-      }
-    }, []);
-
-  const isValidReports = (
-    reports: { isValid: boolean; comparisonType: string }[],
-  ): boolean => {
-    return reports.every(
-      (report) =>
-        report.isValid && report.comparisonType === reports[0].comparisonType,
-    );
+      return true;
+    });
+    return greater || less;
   };
 
-  const reportsSummaries = rows.map((row) => getReportSummary(row));
-
-  const result = reportsSummaries.filter(isValidReports);
-
-  return result.length;
+  const validReports = rows.filter(isValidReport);
+  return validReports.length;
 };
 
 const puzzleTwo = (filename: string) => {
-  return -1;
+  const fileContent = fs.readFileSync(filename, "utf8");
+
+  const rows = fileContent
+    .split("\n")
+    .map((row) => row.split(" ").flatMap(Number));
+
+  const isValidReport = (report: number[]) => {
+    const greater = report.every((value, index, arr) => {
+      if (arr.length > 2) {
+        if (index + 1 < arr.length) {
+          return arr[index + 1] > value && arr[index + 1] - value < 4;
+        }
+        return true;
+      }
+    });
+    const less = report.every((value, index, arr) => {
+      if (arr.length > 2) {
+        if (index + 1 < arr.length) {
+          return arr[index + 1] < value && value - arr[index + 1] < 4;
+        }
+        return true;
+      }
+    });
+    return greater || less;
+  };
+
+  const validReports = rows.filter(isValidReport);
+
+  const invalidReports = rows.filter((row) => !isValidReport(row));
+
+  const isReportsWithOneLessValid = invalidReports.flatMap((report) => {
+    return report.map((_, index, arr) => {
+      if (isValidReport([...arr.slice(0, index), ...arr.slice(index + 1)])) {
+        arr.splice(1);
+        return true;
+      }
+    });
+  });
+
+  return validReports.length + isReportsWithOneLessValid.filter(Boolean).length;
 };
 
 export { puzzleOne, puzzleTwo };
